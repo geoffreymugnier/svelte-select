@@ -7,6 +7,7 @@
 
   import ItemComponent from './Item.svelte';
   import VirtualList from './VirtualList.svelte';
+  import Filters from './Filters.svelte';
 
   export let Item = ItemComponent;
   export let isVirtualList = false;
@@ -24,6 +25,9 @@
   export let isMulti = false;
   export let activeItemIndex = 0;
   export let filterText = '';
+  export let filters = [];
+  export let selectedFilters = [];
+  export let displayFiltersOnOpen = false;
 
   let isScrollingTimer = 0;
   let isScrolling = false;
@@ -202,7 +206,6 @@
   function isItemHover(hoverItemIndex, item, itemIndex, items) {
     return hoverItemIndex === itemIndex || items.length === 1;
   }
-
 </script>
 
 <svelte:window on:keydown="{handleKeyDown}" />
@@ -231,6 +234,12 @@
 
 {#if !isVirtualList}
 <div class="listContainer" bind:this={container}>
+  <svelte:component
+    this="{Filters}"
+    {filters}
+    {displayFiltersOnOpen}
+    {selectedFilters}
+  />
   {#each items as item, i}
     {#if item.isGroupHeader && !item.isSelectable}
       <div class="listGroupTitle">{getGroupHeaderLabel(item)}</div>

@@ -13,6 +13,7 @@
   import isOutOfViewport from "./utils/isOutOfViewport";
   import debounce from "./utils/debounce";
   import DefaultClearIcon from "./ClearIcon.svelte";
+  import { writable } from "svelte/store";
 
   const dispatch = createEventDispatcher();
   export let container = undefined;
@@ -84,6 +85,8 @@
   export let containerClasses = "";
   export let indicatorSvg = undefined;
   export let ClearIcon = DefaultClearIcon;
+  export let filters = [];
+  export let displayFiltersOnOpen = false;
 
   let target;
   let activeSelectedValue;
@@ -95,6 +98,8 @@
   let prev_isFocused;
   let prev_filteredItems;
 
+  const selectedFilters = writable([]);
+
   async function resetFilter() {
     await tick();
     filterText = "";
@@ -105,7 +110,7 @@
     getItemsHasInvoked = true;
     isWaiting = true;
 
-    let res = await loadOptions(filterText).catch(err => {
+    let res = await loadOptions(filterText, $selectedFilters).catch(err => {
       console.warn('svelte-select loadOptions error :>> ', err);
       dispatch("error", { type: 'loadOptions', details: err });
     });
@@ -126,6 +131,8 @@
   }, loadOptionsInterval);
 
   $: disabled = isDisabled;
+
+  $: getItems($selectedFilters);
 
   $: updateSelectedValueDisplay(items);
 
@@ -525,14 +532,18 @@
     if (!container) return;
     const eventTarget =
       event.path && event.path.length > 0 ? event.path[0] : event.target;
-    if (container.contains(eventTarget)) return;
+    const clickInFilterDetails = eventTarget.closest('.filters-container') !== null;
+    if (container.contains(eventTarget) || clickInFilterDetails) return;
     isFocused = false;
     listOpen = false;
     activeSelectedValue = undefined;
     if (input) input.blur();
   }
 
-  function handleClick() {
+  function handleClick(e) {
+    const clickInFilterDetails = e.target.closest('.filters-container') !== null;
+    if (clickInFilterDetails) return;
+
     if (isDisabled) return;
     isFocused = true;
     listOpen = !listOpen;
@@ -560,7 +571,10 @@
       isMulti,
       getGroupHeaderLabel,
       items: filteredItems,
-      itemHeight
+      itemHeight,
+      filters,
+      selectedFilters,
+      displayFiltersOnOpen
     };
 
     if (getOptionLabel) {
@@ -634,6 +648,14 @@
   }
 
   onMount(() => {
+    filters.map((f) => {
+      if (f.type == 'checkbox')
+        return $selectedFilters[f.key] = null
+      else if (f.type == 'daterange' || f.type == 'range')
+        return $selectedFilters[f.key] = { from: null, to: null }
+      return $selectedFilters[f.key] = []
+    });
+
     if (isFocused) input.focus();
     if (listOpen) loadList();
 
