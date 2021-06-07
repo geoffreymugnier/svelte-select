@@ -1,3 +1,5 @@
+Project to integrate filters in rob-balfre select. Once ready, a PR will be sent to rob-balfre repository.
+
 # svelte-select
 
 A select/autocomplete component for Svelte apps.  With support for grouping, filtering, async and more.
